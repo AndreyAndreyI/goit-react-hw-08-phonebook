@@ -1,71 +1,77 @@
-import shortid from 'shortid';
-import { useDispatch, useSelector } from 'react-redux';
-import { BsPersonPlusFill, BsFillTelephoneFill } from 'react-icons/bs';
-import { toast } from 'react-toastify';
-import { Form, FormInput, FormBtn, Contactabel } from './ContactForm.styled';
-import { addContact } from '../../redux/contacts/contactsOperations';
+import { useSelector, useDispatch } from 'react-redux';
+import { useState } from 'react';
+import { Notify } from 'notiflix';
+import { addContact } from '../../redux/contacts/operations';
+import Button from '../Button';
 
-export const ContactForm = () => {
+const ContactForm = () => {
+  const [name, setName] = useState('');
+  const [number, setNumber] = useState('');
+
   const contacts = useSelector(state => state.contacts.items);
-  const nameInputIdFirst = shortid.generate();
-  const nameInputIdSecond = shortid.generate();
   const dispatch = useDispatch();
 
-  const handleSubmit = e => {
-    e.preventDefault();
-
-    const obj = {
-      [e.target.elements.name.name]: e.target.elements.name.value,
-      [e.target.elements.number.name]: e.target.elements.number.value,
-    };
-
-    const includesName = contacts.find(contact => contact.name.toLowerCase() === e.target.elements.name.value.toLowerCase() && contact.number === e.target.elements.number.value);
-
-    if (includesName) {
-      toast.error(`"${e.target.elements.name.value}" with same number is already in contacts`);
-      e.target.reset();
+  const handleSubmit = evt => {
+    evt.preventDefault();
+    if (
+      contacts.find(
+        contact => contact.name.toLowerCase() === name.toLowerCase()
+      )
+    ) {
+      Notify.failure(`${name} is already in contacts`);
       return;
     }
+    dispatch(addContact({ name: name, number: number }));
+    setName('');
+    setNumber('');
+  };
 
-    dispatch(addContact(obj));
-
-    e.target.reset();
+  const handleChange = evt => {
+    const { name, value } = evt.target;
+    switch (name) {
+      case 'name':
+        setName(value);
+        break;
+      case 'number':
+        setNumber(value);
+        break;
+      default:
+        return console.log('Something went wrong');
+    }
   };
 
   return (
-    <div>
-      <Form onSubmit={handleSubmit}>
-        <Contactabel htmlFor={nameInputIdFirst}>
-          <BsPersonPlusFill size={18} style={{ marginRight: '5px', marginLeft: '1px' }} />
-          Name
-        </Contactabel>
-        <FormInput
-          id={nameInputIdFirst}
+    <form onSubmit={handleSubmit}>
+      <label className="formLabel">
+        <span className="labelTitle">Name:</span>
+        <input
+          className="inputTag"
           type="text"
           name="name"
           pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
           title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
+          onChange={handleChange}
+          value={name}
           required
-          placeholder="Adrian Cross"
         />
-        <Contactabel htmlFor={nameInputIdSecond}>
-          {' '}
-          <BsFillTelephoneFill size={16} style={{ marginRight: '5px', marginLeft: '1px' }} />
-          Number
-        </Contactabel>
-        <FormInput
-          id={nameInputIdSecond}
+      </label>
+      <label className="formLabel">
+        <span className="labelTitle">Number:</span>
+        <input
+          className="inputTag"
           type="tel"
           name="number"
           pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
           title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
+          onChange={handleChange}
+          value={number}
           required
-          placeholder="+38 077-777-77-77"
-          minLength="10"
-          maxLength="17"
         />
-        <FormBtn type="submit">Add contact</FormBtn>
-      </Form>
-    </div>
+      </label>
+
+      <Button title="Add contact" type="submit" />
+    </form>
   );
 };
+
+export default ContactForm;
